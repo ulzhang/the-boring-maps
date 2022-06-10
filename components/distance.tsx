@@ -10,6 +10,9 @@ type DistanceProps = {
 
 export default function Distance({ leg }: DistanceProps) {
   if (!leg.distance || !leg.duration) return null;
+  if (!leg.duration_in_traffic) return null;
+
+  // (leg.duration_in_traffic && console.log(leg.duration_in_traffic))
 
   const days = Math.floor(
     (commutesPerYear * leg.duration.value) / secondsPerDay
@@ -24,6 +27,12 @@ export default function Distance({ leg }: DistanceProps) {
         This home is <span className="highlight">{leg.distance.text}</span> away
         from your office. That would take{" "}
         <span className="highlight">{leg.duration.text}</span> each direction.
+      </p>
+
+      <p>
+        IN TRAFFIC This home is <span className="highlight">{leg.distance.text}</span> away
+        from your office. That would take{" "}
+        <span className="highlight">{leg.duration_in_traffic.text}</span> each direction IN TRAFFIC.
       </p>
 
       <p>

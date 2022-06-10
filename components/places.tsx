@@ -12,10 +12,10 @@ import {
 import "@reach/combobox/styles.css";
 
 type PlacesProps = {
-  setOffice: (position: google.maps.LatLngLiteral) => void;
+  setLocation: (position: google.maps.LatLngLiteral) => void;
 };
 
-export default function Places({ setOffice }: PlacesProps) {
+export default function Places({ setLocation }: PlacesProps) {
   const {
     ready,
     value,
@@ -30,8 +30,12 @@ export default function Places({ setOffice }: PlacesProps) {
 
     const results = await getGeocode({ address: val });
     const { lat, lng } = await getLatLng(results[0]);
-    setOffice({ lat, lng });
+    setLocation({ lat, lng });
   };
+
+  const handleReset = () => {
+    setValue("");
+  }
 
   return (
     <Combobox onSelect={handleSelect}>
@@ -50,6 +54,7 @@ export default function Places({ setOffice }: PlacesProps) {
             ))}
         </ComboboxList>
       </ComboboxPopover>
+      <button onClick={handleReset}>X</button>
     </Combobox>
   );
 }

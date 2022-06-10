@@ -1,5 +1,5 @@
 {
-  "name": "google-maps-next",
+  "name": "the-boring-maps",
   "private": true,
   "scripts": {
     "dev": "next dev",
