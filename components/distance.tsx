@@ -23,26 +23,26 @@ export default function Distance({ leg }: DistanceProps) {
 
   return (
     <div>
-      <p>
+      {/* <p>
         This home is <span className="highlight">{leg.distance.text}</span> away
         from your office. That would take{" "}
         <span className="highlight">{leg.duration.text}</span> each direction.
-      </p>
+      </p> */}
 
       <p>
-        IN TRAFFIC This home is <span className="highlight">{leg.distance.text}</span> away
-        from your office. That would take{" "}
+        IN TRAFFIC, <span className="highlight">{leg.start_address}</span> is <span className="highlight">{leg.distance.text}</span> away
+        from <span className="highlight">{leg.end_address}</span>. That would take{" "}
         <span className="highlight">{leg.duration_in_traffic.text}</span> each direction IN TRAFFIC.
       </p>
 
-      <p>
+      {/* <p>
         That's <span className="highlight">{days} days</span> in your car each
         year at a cost of{" "}
         <span className="highlight">
           ${new Intl.NumberFormat().format(cost)}
         </span>
         .
-      </p>
+      </p> */}
     </div>
   );
 }

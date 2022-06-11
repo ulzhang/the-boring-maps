@@ -9,6 +9,7 @@ import {
 } from "@react-google-maps/api";
 import Places from "./places";
 import Distance from "./distance";
+import { dir } from "console";
 
 type LatLngLiteral = google.maps.LatLngLiteral;
 type DirectionsResult = google.maps.DirectionsResult;
@@ -18,7 +19,11 @@ export default function Map() {
   const [start, setStart] = useState<LatLngLiteral>();
   const [end, setEnd] = useState<LatLngLiteral>();
   const [directions, setDirections] = useState<DirectionsResult>();
-  // const [directions, setDirections] = useState<Array<DirectionsResult>>([]);
+  const [directionsBase, setDirectionsBase] = useState<DirectionsResult>();
+  const [directionsStart, setDirectionsStart] = useState<DirectionsResult>();
+  const [directionsEnd, setDirectionsEnd] = useState<DirectionsResult>();
+  const [directionsStartArr, setDirectionsStartArr] = useState<Array<DirectionsResult>>([]);
+  const [directionsEndArr, setDirectionsEndArr] = useState<Array<DirectionsResult>>([]);
   const mapRef = useRef<GoogleMap>();
   const center = useMemo<LatLngLiteral>(
     () => ({ lat: 36.13, lng: -115.15 }),
@@ -35,11 +40,25 @@ export default function Map() {
   const onLoad = useCallback((map) => (mapRef.current = map), []);
 
   useEffect(()=>{
-    // console.log(directions)
-  },[directions])
+    if (directionsStartArr.length > 1) {
+      var min = directionsEndArr.reduce(function(res, obj) {
+        return (obj.routes[0].legs[0].duration.value < res.routes[0].legs[0].duration.value) ? obj : res;
+      });   
+      setDirectionsStart(min)
+    }
+  },[directionsStartArr])
 
-  const fetchDirections = (start: LatLngLiteral, end: LatLngLiteral) => {
-    if (!start || !end) return;
+  useEffect(()=>{
+    if (directionsEndArr.length > 1) {
+      var min = directionsEndArr.reduce(function(res, obj) {
+        return (obj.routes[0].legs[0].duration.value < res.routes[0].legs[0].duration.value) ? obj : res;
+      });    
+      setDirectionsEnd(min)
+    }
+  },[directionsEndArr])
+
+  const fetchDirectionsBase = (start: LatLngLiteral, end: LatLngLiteral) => {
+    if (!start || !end) return undefined;
 
     const service = new google.maps.DirectionsService();
     service.route(
@@ -53,32 +72,88 @@ export default function Map() {
       },
       (result, status) => {
         if (status === "OK" && result) {
-          setDirections(result)
-          // setDirections(d => [...d, result])
+          setDirectionsBase(result)
           return result
         }
       }
     );
-    return;
+    return undefined;
   };
 
-  const fetchAllDirections = (start: LatLngLiteral, end: LatLngLiteral) => {
+  const fetchDirectionsStart = (start: LatLngLiteral, end: LatLngLiteral) => {
+    if (!start || !end) return undefined;
+
+    const service = new google.maps.DirectionsService();
+    service.route(
+      {
+        origin: start,
+        destination: end,
+        drivingOptions: {
+          departureTime: getNextFriday(),
+        },
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK" && result) {
+          setDirectionsStartArr(d => [...d, result])
+          return result
+        }
+      }
+    );
+    return undefined;
+  };
+
+  const fetchDirectionsEnd = (start: LatLngLiteral, end: LatLngLiteral) => {
+    if (!start || !end) return undefined;
+
+    const service = new google.maps.DirectionsService();
+    service.route(
+      {
+        origin: start,
+        destination: end,
+        drivingOptions: {
+          departureTime: getNextFriday(),
+        },
+        travelMode: google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK" && result) {
+          setDirectionsEndArr(d => [...d, result])
+          return result
+        }
+      }
+    );
+    return undefined;
+  };
+
+
+  const fetchAllDirections = () => {
     if (!start || !end) return;
-    const baseCase = fetchDirections(start, end);
+    
+    const baseCase = fetchDirectionsBase(start, end);
 
     const startCase = stations.map((station) => (
-      fetchDirections(start, station.latlng)
+      fetchDirectionsStart(start, station.latlng)
     ));
     const endCase = stations.map((station) => (
-      fetchDirections(station.latlng, end)
+      fetchDirectionsEnd(station.latlng, end)
     ));
-
   }
 
   return (
     <div className="container">
-      <div className="controls">
-        <h1>Commute?</h1>
+      <div className="controls" style={{overflowY: 'scroll', width: 400}}>
+        <button
+          onClick={()=>{
+            setStart({lat:36.16916599, lng: -115.139832774})
+            setEnd({lat: 36.0876986, lng: -115.1510303})
+            start && mapRef.current?.panTo(start);
+            fetchAllDirections();
+          }}
+        >
+          Test
+        </button>
+        {/* <h1>Commute?</h1>
         <Places
           setLocation={(position) => {
             setStart(position);
@@ -97,9 +172,45 @@ export default function Map() {
         />
           {!end && <p>Enter ending destination.</p>}
         </>
-        }
+        } */}
 
-        {/* {directions && <Distance leg={directions.routes[0].legs[0]} />} */}
+        {/* {directionsArr && directionsArr.map((direction, index)=>{
+          return (
+            <>
+              <h1>{direction.useCase}</h1>
+              <Distance 
+                key={index}
+                leg={direction.result.routes[0].legs[0]}
+              />  
+            </>
+          )
+        })} */}
+
+          {directionsBase && 
+          <>
+          <h1>Base</h1>
+          <Distance 
+            key={"base"}
+            leg={directionsBase.routes[0].legs[0]}
+          />  
+          </>}
+          {directionsStart && 
+          <>
+          <h1>Start</h1>
+          <Distance 
+            key={"start"}
+            leg={directionsStart.routes[0].legs[0]}
+          />  
+          </>}
+          {directionsEnd && 
+          <>
+          <h1>End</h1>
+          <Distance 
+            key={"end"}
+            leg={directionsEnd.routes[0].legs[0]}
+          />  
+          </>}
+        
       </div>
       <div className="map">
         <GoogleMap
@@ -109,32 +220,62 @@ export default function Map() {
           options={options}
           onLoad={onLoad}
         >
-          {directions && 
+          
+            {/* {directionsArr && 
+              directionsArr.map((direction) => {
+                return (
+
+                  <DirectionsRenderer
+                  key={direction.result.routes[0].overview_polyline}
+                  directions={direction.result}
+                  options={{
+                    polylineOptions: {
+                      zIndex: 50,
+                      strokeColor: "#1976D2",
+                      strokeWeight: 5,
+                    },
+                  }}
+                  />
+                )
+              })
+            } */}
+
+          {directionsBase && 
+          <DirectionsRenderer
+            key={"base"}
+            directions={directionsBase}
+            options={{
+              polylineOptions: {
+                zIndex: 50,
+                strokeColor: "#1976D2",
+                strokeWeight: 5,
+              },
+            }}
+          />}
+          {directionsStart && 
             <DirectionsRenderer
-                key={directions.routes[0].overview_polyline}
-                directions={directions}
-                options={{
-                  polylineOptions: {
-                    zIndex: 50,
-                    strokeColor: "#1976D2",
-                    strokeWeight: 5,
-                  },
-                }}
-              />
-            // directions.map((direction) => {
-            //   <DirectionsRenderer
-            //     key={direction.routes[0].overview_polyline}
-            //     directions={direction}
-            //     options={{
-            //       polylineOptions: {
-            //         zIndex: 50,
-            //         strokeColor: "#1976D2",
-            //         strokeWeight: 5,
-            //       },
-            //     }}
-            //   />
-            // })
-          }
+              key={"start"}
+              directions={directionsStart}
+              options={{
+                polylineOptions: {
+                  zIndex: 50,
+                  strokeColor: "#1976D2",
+                  strokeWeight: 5,
+                },
+              }}
+          />}
+          {directionsEnd && 
+            <DirectionsRenderer
+              key={"end"}
+              directions={directionsEnd}
+              options={{
+                polylineOptions: {
+                  zIndex: 50,
+                  strokeColor: "#1976D2",
+                  strokeWeight: 5,
+                },
+              }}
+          />}
 
           {stations &&
             stations.map((station) => (
@@ -161,13 +302,6 @@ export default function Map() {
                   icon="https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png"
                 />
               )}
-
-
-
-
-              {/* <Circle center={start} radius={15000} options={closeOptions} />
-              <Circle center={start} radius={30000} options={middleOptions} />
-              <Circle center={start} radius={45000} options={farOptions} /> */}
             </>
           )}
           <TrafficLayer />
@@ -184,39 +318,6 @@ const defaultOptions = {
   draggable: false,
   editable: false,
   visible: true,
-};
-const closeOptions = {
-  ...defaultOptions,
-  zIndex: 3,
-  fillOpacity: 0.05,
-  strokeColor: "#8BC34A",
-  fillColor: "#8BC34A",
-};
-const middleOptions = {
-  ...defaultOptions,
-  zIndex: 2,
-  fillOpacity: 0.05,
-  strokeColor: "#FBC02D",
-  fillColor: "#FBC02D",
-};
-const farOptions = {
-  ...defaultOptions,
-  zIndex: 1,
-  fillOpacity: 0.05,
-  strokeColor: "#FF5252",
-  fillColor: "#FF5252",
-};
-
-const generateHouses = (position: LatLngLiteral) => {
-  const _houses: Array<LatLngLiteral> = [];
-  for (let i = 0; i < 100; i++) {
-    const direction = Math.random() < 0.5 ? -2 : 2;
-    _houses.push({
-      lat: position.lat + Math.random() / direction,
-      lng: position.lng + Math.random() / direction,
-    });
-  }
-  return _houses;
 };
 
 const getNextFriday = () => {
@@ -236,22 +337,22 @@ const getNextFriday = () => {
 // | DT LV | 36.1679265,-115.1620129 |
 
 const stations: Array<{name: string, latlng:LatLngLiteral}> = [ 
-  // {
-  //   name: "LVCC",
-  //   latlng: {lat: 36.1330633, lng: -115.1641777}
-  // },
-  // {
-  //   name: "LVAIRPORT",
-  //   latlng: {lat: 36.0876986, lng: -115.1510303}
-  // },
-  // {
-  //   name: "ALLEGIANT",
-  //   latlng: {lat: 36.0908708, lng: -115.1855109}
-  // },
-  // {
-  //   name: "DTLV",
-  //   latlng: {lat: 36.1679265, lng: -115.1620129}
-  // },
+  {
+    name: "LVCC",
+    latlng: {lat: 36.1330633, lng: -115.1641777}
+  },
+  {
+    name: "LVAIRPORT",
+    latlng: {lat: 36.0876986, lng: -115.1510303}
+  },
+  {
+    name: "ALLEGIANT",
+    latlng: {lat: 36.0908708, lng: -115.1855109}
+  },
+  {
+    name: "DTLV",
+    latlng: {lat: 36.1679265, lng: -115.1620129}
+  },
 ];
 
 const routes = {
