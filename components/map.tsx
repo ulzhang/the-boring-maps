@@ -31,29 +31,35 @@ export default function Map() {
   );
   const options = useMemo<MapOptions>(
     () => ({
-      mapId: "b181cac70f27f5e6",
+      mapId: "4f6a74f97c6cb648",
       disableDefaultUI: true,
       clickableIcons: false,
     }),
     []
   );
   const onLoad = useCallback((map) => (mapRef.current = map), []);
+  const boringIcon: google.maps.Icon = {
+    url: "https://images.squarespace-cdn.com/content/v1/6063b0835f68896079d7d643/1617895467119-ES2L55ABT0EWFFKS7BMZ/Loop%2BTunnel.png",  // url
+    scaledSize: new google.maps.Size(50, 50), // scaled size
+  };  
 
   useEffect(()=>{
     if (directionsStartArr.length > 1) {
-      var min = directionsEndArr.reduce(function(res, obj) {
-        return (obj.routes[0].legs[0].duration.value < res.routes[0].legs[0].duration.value) ? obj : res;
-      });   
-      setDirectionsStart(min)
+      var min = directionsStartArr.reduce(function(res, obj) {
+        return (obj!.routes[0]!.legs[0]!.duration!.value! < res!.routes[0]!.legs[0]!.duration!.value!) ? obj : res;
+      });      
+      setDirectionsStart(min);
+      (start && mapRef.current?.panTo(start));
     }
   },[directionsStartArr])
 
   useEffect(()=>{
     if (directionsEndArr.length > 1) {
       var min = directionsEndArr.reduce(function(res, obj) {
-        return (obj.routes[0].legs[0].duration.value < res.routes[0].legs[0].duration.value) ? obj : res;
+        return (obj!.routes[0]!.legs[0]!.duration!.value! < res!.routes[0]!.legs[0]!.duration!.value!) ? obj : res;
       });    
-      setDirectionsEnd(min)
+      setDirectionsEnd(min);
+      (start && mapRef.current?.panTo(start));
     }
   },[directionsEndArr])
 
@@ -80,14 +86,13 @@ export default function Map() {
     return undefined;
   };
 
-  const fetchDirectionsStart = (start: LatLngLiteral, end: LatLngLiteral) => {
-    if (!start || !end) return undefined;
+  const fetchDirectionsTunnels = (start: LatLngLiteral, end: LatLngLiteral, station:LatLngLiteral) => {
 
     const service = new google.maps.DirectionsService();
     service.route(
       {
         origin: start,
-        destination: end,
+        destination: station,
         drivingOptions: {
           departureTime: getNextFriday(),
         },
@@ -96,20 +101,13 @@ export default function Map() {
       (result, status) => {
         if (status === "OK" && result) {
           setDirectionsStartArr(d => [...d, result])
-          return result
+          // directionsStartArr.current.push(result)
         }
       }
     );
-    return undefined;
-  };
-
-  const fetchDirectionsEnd = (start: LatLngLiteral, end: LatLngLiteral) => {
-    if (!start || !end) return undefined;
-
-    const service = new google.maps.DirectionsService();
     service.route(
       {
-        origin: start,
+        origin: station,
         destination: end,
         drivingOptions: {
           departureTime: getNextFriday(),
@@ -119,41 +117,38 @@ export default function Map() {
       (result, status) => {
         if (status === "OK" && result) {
           setDirectionsEndArr(d => [...d, result])
-          return result
         }
       }
     );
-    return undefined;
+      
   };
-
 
   const fetchAllDirections = () => {
     if (!start || !end) return;
-    
-    const baseCase = fetchDirectionsBase(start, end);
 
-    const startCase = stations.map((station) => (
-      fetchDirectionsStart(start, station.latlng)
-    ));
-    const endCase = stations.map((station) => (
-      fetchDirectionsEnd(station.latlng, end)
-    ));
+    fetchDirectionsBase(start, end);
+
+    for (const s of stations) {
+      fetchDirectionsTunnels(start, end, s.latlng)
+    }
   }
 
   return (
     <div className="container">
       <div className="controls" style={{overflowY: 'scroll', width: 400}}>
+        <h1>The Boring Company Maps</h1>
+
         <button
           onClick={()=>{
-            setStart({lat:36.16916599, lng: -115.139832774})
-            setEnd({lat: 36.0876986, lng: -115.1510303})
-            start && mapRef.current?.panTo(start);
+            setStart({lat: 36.1330633, lng: -115.1641777});
+            setEnd({lat: 36.0876986, lng: -115.1510303});
             fetchAllDirections();
           }}
         >
-          Test
-        </button>
-        {/* <h1>Commute?</h1>
+          Sample Directions
+        </button> {"Triple click to zoom out"}
+        
+        <h1>Add your own directions</h1>
         <Places
           setLocation={(position) => {
             setStart(position);
@@ -167,30 +162,24 @@ export default function Map() {
           <Places
           setLocation={(position) => {
             setEnd(position);
-            fetchAllDirections(start, position);
           }}
         />
           {!end && <p>Enter ending destination.</p>}
-        </>
-        } */}
 
-        {/* {directionsArr && directionsArr.map((direction, index)=>{
-          return (
-            <>
-              <h1>{direction.useCase}</h1>
-              <Distance 
-                key={index}
-                leg={direction.result.routes[0].legs[0]}
-              />  
-            </>
-          )
-        })} */}
+          {start && end && 
+            <button
+              onClick={fetchAllDirections}>
+                Search
+            </button>} {"Double click to zoom out"}
+        </>
+        
+        }
 
           {directionsBase && 
           <>
           <h1>Base</h1>
           <Distance 
-            key={"base"}
+            key={directionsBase.routes[0].overview_polyline}
             leg={directionsBase.routes[0].legs[0]}
           />  
           </>}
@@ -198,7 +187,7 @@ export default function Map() {
           <>
           <h1>Start</h1>
           <Distance 
-            key={"start"}
+            key={directionsStart.routes[0].overview_polyline}
             leg={directionsStart.routes[0].legs[0]}
           />  
           </>}
@@ -206,7 +195,7 @@ export default function Map() {
           <>
           <h1>End</h1>
           <Distance 
-            key={"end"}
+            key={directionsEnd.routes[0].overview_polyline}
             leg={directionsEnd.routes[0].legs[0]}
           />  
           </>}
@@ -220,25 +209,6 @@ export default function Map() {
           options={options}
           onLoad={onLoad}
         >
-          
-            {/* {directionsArr && 
-              directionsArr.map((direction) => {
-                return (
-
-                  <DirectionsRenderer
-                  key={direction.result.routes[0].overview_polyline}
-                  directions={direction.result}
-                  options={{
-                    polylineOptions: {
-                      zIndex: 50,
-                      strokeColor: "#1976D2",
-                      strokeWeight: 5,
-                    },
-                  }}
-                  />
-                )
-              })
-            } */}
 
           {directionsBase && 
           <DirectionsRenderer
@@ -247,9 +217,9 @@ export default function Map() {
             options={{
               polylineOptions: {
                 zIndex: 50,
-                strokeColor: "#1976D2",
+                strokeColor: "#8F00FF",
                 strokeWeight: 5,
-              },
+              }
             }}
           />}
           {directionsStart && 
@@ -259,7 +229,7 @@ export default function Map() {
               options={{
                 polylineOptions: {
                   zIndex: 50,
-                  strokeColor: "#1976D2",
+                  strokeColor: "#4285F4",
                   strokeWeight: 5,
                 },
               }}
@@ -271,7 +241,7 @@ export default function Map() {
               options={{
                 polylineOptions: {
                   zIndex: 50,
-                  strokeColor: "#1976D2",
+                  strokeColor: "#4285F4",
                   strokeWeight: 5,
                 },
               }}
@@ -282,6 +252,8 @@ export default function Map() {
               <Marker
                 key={station.latlng.lat}
                 position={station.latlng}
+                icon={boringIcon}
+                zIndex={999}
               />
             ))
           }
@@ -328,6 +300,7 @@ const getNextFriday = () => {
   resultDate.setHours(17, 0, 0)
   return resultDate;
 }
+
 
 // | STATION | LATLNG |
 // | --- | --- |

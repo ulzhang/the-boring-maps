@@ -1,3 +1,5 @@
+import Parser from 'html-react-parser';
+
 const commutesPerYear = 260 * 2;
 const litresPerKM = 10 / 100;
 const gasLitreCost = 1.5;
@@ -12,8 +14,6 @@ export default function Distance({ leg }: DistanceProps) {
   if (!leg.distance || !leg.duration) return null;
   if (!leg.duration_in_traffic) return null;
 
-  // (leg.duration_in_traffic && console.log(leg.duration_in_traffic))
-
   const days = Math.floor(
     (commutesPerYear * leg.duration.value) / secondsPerDay
   );
@@ -24,9 +24,9 @@ export default function Distance({ leg }: DistanceProps) {
   return (
     <div>
       {/* <p>
-        This home is <span className="highlight">{leg.distance.text}</span> away
-        from your office. That would take{" "}
-        <span className="highlight">{leg.duration.text}</span> each direction.
+        <span className="highlight">{leg.start_address}</span> is <span className="highlight">{leg.distance.text}</span> away
+        from <span className="highlight">{leg.end_address}</span>. That would take{" "}
+        <span className="highlight">{leg.duration.text}</span>.
       </p> */}
 
       <p>
@@ -35,6 +35,17 @@ export default function Distance({ leg }: DistanceProps) {
         <span className="highlight">{leg.duration_in_traffic.text}</span> each direction IN TRAFFIC.
       </p>
 
+      <ol>
+        {leg.steps.map((step, index) => {
+          return  <li
+                    key={index}
+                  >
+                    {Parser(step.instructions)} {"("}{step.distance?.text}{" | "}{step.duration?.text}{")"}
+                  </li>
+
+        })}
+      </ol>
+      
       {/* <p>
         That's <span className="highlight">{days} days</span> in your car each
         year at a cost of{" "}
