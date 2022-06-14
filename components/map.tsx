@@ -9,6 +9,7 @@ import {
 } from "@react-google-maps/api";
 import Places from "./places";
 import Distance from "./distance";
+import TunnelDistance from "./tunnelDistance";
 import { dir } from "console";
 
 type LatLngLiteral = google.maps.LatLngLiteral;
@@ -177,29 +178,33 @@ export default function Map() {
 
           {directionsBase && 
           <>
-          <h1>Base</h1>
+          <h1>Base Case</h1>
           <Distance 
             key={directionsBase.routes[0].overview_polyline}
             leg={directionsBase.routes[0].legs[0]}
           />  
           </>}
-          {directionsStart && 
+          {directionsStart && directionsEnd && 
           <>
-          <h1>Start</h1>
-          <Distance 
-            key={directionsStart.routes[0].overview_polyline}
-            leg={directionsStart.routes[0].legs[0]}
-          />  
-          </>}
-          {directionsEnd && 
-          <>
-          <h1>End</h1>
-          <Distance 
+          <h1>Tunnel Case</h1>
+          <TunnelDistance 
             key={directionsEnd.routes[0].overview_polyline}
-            leg={directionsEnd.routes[0].legs[0]}
+            legStart={directionsStart.routes[0].legs[0]}
+            legEnd={directionsEnd.routes[0].legs[0]}
           />  
           </>}
         
+        {[
+
+          "In early 2022, I was interviewing with Elon Musk's The Boring Company. ",
+          "Although, I didn't get the job. (Ask me about the tragic interview story). ",
+          "This side project is the result of asking myself if a tunnel system is actually viable. ",
+          "By inputting two locations (in Las Vegas), this app checks for the base case and the tunnel case. ",
+          "The base case is the default directions/duration by car on the road. ",
+          "The tunnel case is if you took a route to the nearest proposed tunnel station. ",
+          "Using Google Maps API, this will calculate the closest tunnel route. ",
+          "See for yourself! "
+        ]}
       </div>
       <div className="map">
         <GoogleMap
