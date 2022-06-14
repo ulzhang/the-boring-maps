@@ -9,7 +9,6 @@ import {
 } from "@react-google-maps/api";
 import Places from "./places";
 import Distance from "./distance";
-import TunnelDistance from "./tunnelDistance";
 import { dir } from "console";
 
 type LatLngLiteral = google.maps.LatLngLiteral;
@@ -147,7 +146,8 @@ export default function Map() {
           }}
         >
           Sample Directions
-        </button> {"Triple click to zoom out"}
+        </button> {"Triple click to zoom out. "}
+        {"State mgmt needs to improved, refresh page when adding new directions"}
         
         <h1>Add your own directions</h1>
         <Places
@@ -176,19 +176,12 @@ export default function Map() {
         
         }
 
-          {directionsBase && 
+          {directionsBase && directionsStart && directionsEnd && 
           <>
-          <h1>Base Case</h1>
+          <h1>Commute Information</h1>
           <Distance 
             key={directionsBase.routes[0].overview_polyline}
-            leg={directionsBase.routes[0].legs[0]}
-          />  
-          </>}
-          {directionsStart && directionsEnd && 
-          <>
-          <h1>Tunnel Case</h1>
-          <TunnelDistance 
-            key={directionsEnd.routes[0].overview_polyline}
+            legBase={directionsBase.routes[0].legs[0]}
             legStart={directionsStart.routes[0].legs[0]}
             legEnd={directionsEnd.routes[0].legs[0]}
           />  

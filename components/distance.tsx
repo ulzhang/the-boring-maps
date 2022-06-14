@@ -1,44 +1,50 @@
 import Parser from 'html-react-parser';
 
-const commutesPerYear = 260 * 2;
-const litresPerKM = 10 / 100;
-const gasLitreCost = 1.5;
-const litreCostKM = litresPerKM * gasLitreCost;
-const secondsPerDay = 60 * 60 * 24;
-
 type DistanceProps = {
-  leg: google.maps.DirectionsLeg;
+    legBase: google.maps.DirectionsLeg;
+    legStart: google.maps.DirectionsLeg;
+    legEnd: google.maps.DirectionsLeg;
 };
 
-export default function Distance({ leg }: DistanceProps) {
-  if (!leg.distance || !leg.duration) return null;
-  if (!leg.duration_in_traffic) return null;
+export default function TunnelDistance({ legBase, legStart, legEnd }: DistanceProps) {
+  if (!legBase.distance || !legBase.duration || !legBase.duration_in_traffic) return null;
+  if (!legStart.distance || !legStart.duration || !legStart.duration_in_traffic) return null;
+  if (!legEnd.distance || !legEnd.duration || !legEnd.duration_in_traffic) return null;
 
-  const days = Math.floor(
-    (commutesPerYear * leg.duration.value) / secondsPerDay
-  );
-  const cost = Math.floor(
-    (leg.distance.value / 1000) * litreCostKM * commutesPerYear
-  );
+  const sumOfStartAndEndInMinutes = Math.floor((legStart.duration_in_traffic.value + legEnd.duration_in_traffic.value) / 60);
+  const tunnelDurationText = (sumOfStartAndEndInMinutes + 5) + " min"
 
   return (
     <div>
-      {/* <p>
-        <span className="highlight">{leg.start_address}</span> is <span className="highlight">{leg.distance.text}</span> away
-        from <span className="highlight">{leg.end_address}</span>. That would take{" "}
-        <span className="highlight">{leg.duration.text}</span>.
-      </p> */}
-
       <p>
-        IN TRAFFIC, <span className="highlight">{leg.start_address}</span> is <span className="highlight">{leg.distance.text}</span> away
-        from <span className="highlight">{leg.end_address}</span>. That would take{" "}
-        <span className="highlight">{leg.duration_in_traffic.text}</span> each direction IN TRAFFIC.
+        Traveling via Car through regular roadways from <span className="highlight">{legBase.start_address}</span> to <span className="highlight">{legBase.end_address}</span>
+        would take{" "}
+        <span className="highlight">{legBase.duration_in_traffic.text}</span>.
+      </p>
+      
+      
+      <p>
+        Travelling via Tunnels, enter starting station at <span className="highlight">{legStart.end_address}</span>
+        and traveling to exiting station at <span className="highlight">{legEnd.start_address}</span>
+        would take{" "}
+        <span className="highlight">{tunnelDurationText}</span>.
       </p>
 
       <ol>
-        {leg.steps.map((step, index) => {
+        {legStart.steps.map((step, index) => {
           return  <li
-                    key={index}
+                    key={"s"+index}
+                  >
+                    {Parser(step.instructions)} {"("}{step.distance?.text}{" | "}{step.duration?.text}{")"}
+                  </li>
+
+        })}
+        
+        <li><b>TAKE THE TUNNEL</b> (5 mi | 5 min)</li>
+
+        {legEnd.steps.map((step, index) => {
+          return  <li
+                    key={"e"+index}
                   >
                     {Parser(step.instructions)} {"("}{step.distance?.text}{" | "}{step.duration?.text}{")"}
                   </li>
@@ -46,14 +52,6 @@ export default function Distance({ leg }: DistanceProps) {
         })}
       </ol>
       
-      {/* <p>
-        That's <span className="highlight">{days} days</span> in your car each
-        year at a cost of{" "}
-        <span className="highlight">
-          ${new Intl.NumberFormat().format(cost)}
-        </span>
-        .
-      </p> */}
     </div>
   );
 }
